@@ -51,6 +51,9 @@ public class Walker extends Thread{
 				if(random.nextBoolean())
 				{
 					changeLane();
+					try {
+		                Thread.sleep(random.nextInt(500));
+		            } catch (InterruptedException e) {}
 				}
 			}
 			
@@ -71,9 +74,9 @@ public class Walker extends Thread{
 				if(!(opponent.getPosition() == walking_into && getLane().equals(opponent.getLane()))){
 					setPosition(walking_into);
 					moved = true;
-					System.out.format("%s walked into %d \n", name, walking_into);
-				}else
-					System.out.format("%s failed to move forward. \n", name);
+//					System.out.format("%s walked into %d \n", name, walking_into);
+				}else;
+//					System.out.format("%s failed to move forward. \n", name);
 			}else
 				System.out.println("unable to lock both locks");
 		}finally{
@@ -100,9 +103,9 @@ public class Walker extends Thread{
 
 				if(!(opponent.getPosition() == position && changeToLane.equals(opponent.getLane()))){
 					lane = changeToLane;
-					System.out.format("%s Changed lane \n", name);
-				} else
-					System.out.println("failed to set. aborting");
+//					System.out.format("%s Changed lane \n", name);
+				} else;
+//					System.out.println("failed to set. aborting");
 			}else
 				System.out.println("unable to lock both locks");
 		}finally{
@@ -122,19 +125,20 @@ public class Walker extends Thread{
 	public static void main(String[] args) {
 		for(int i =0; i < 100; i++)
 		{
+			final int b = i;
 			new Thread(){
 				public void run()
 				{
-					walkerPair();
+					walkerPair(b);
 				}
 			}.start();
 		}
 		
 	}
 
-	private static void walkerPair() {
-		Walker walker1 = new Walker("---Mitsos", DIRECTION_FORWARD);
-		Walker walker2 = new Walker("Kwstas", DIRECTION_BACK);
+	private static void walkerPair(int i) {
+		Walker walker1 = new Walker("---Mitsos" + i, DIRECTION_FORWARD);
+		Walker walker2 = new Walker("Kwstas" + i, DIRECTION_BACK);
 		
 		walker1.setOpponent(walker2);
 		walker2.setOpponent(walker1);
