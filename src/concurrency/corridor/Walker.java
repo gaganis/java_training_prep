@@ -38,24 +38,21 @@ public class Walker extends Thread{
 		this.direction = direction;
 		this.lane = Lane.LANE_A;
 		this.name = name;
+		this.position = 10 * direction;
 	}
 	
 	public void run()
 	{
-		for(position = 10 * direction; position != 10 * direction * -1 ;)
+		for(; position != 10 * direction * -1 ;)
 		{
-			int walking_into = position + direction * -1;
-			while(checkPosition(walking_into))
+			
+			if(!moveForward())
 			{
 				if(random.nextBoolean())
 				{
-					try {
-			            Thread.sleep(random.nextInt(500));
-			        } catch (InterruptedException e) {}
 					changeLane();
 				}
 			}
-			checkAndSetPosition(walking_into);
 			
 //			System.out.println(name + " Walking " + position + " Lane " + lane);
 			try {
@@ -64,36 +61,58 @@ public class Walker extends Thread{
 		}
 	}
 
-	private void checkAndSetPosition(int walking_into) {
-		lock.lock();
-		opponent.lock.lock();
-		if(!(opponent.getPosition() == walking_into && getLane().equals(opponent.getLane())))
-			setPosition(walking_into);
-		else
-			System.out.println("failed to set. aborting");
-		lock.unlock();
-		opponent.lock.unlock();
+	private boolean moveForward() {
+		boolean moved = false;
+		boolean myLock = lock.tryLock();
+		boolean otherLock = opponent.lock.tryLock();
+		try{
+			if(myLock && otherLock){
+				int walking_into = position + direction * -1;
+				if(!(opponent.getPosition() == walking_into && getLane().equals(opponent.getLane()))){
+					setPosition(walking_into);
+					moved = true;
+					System.out.format("%s walked into %d \n", name, walking_into);
+				}else
+					System.out.format("%s failed to move forward. \n", name);
+			}else
+				System.out.println("unable to lock both locks");
+		}finally{
+			if(otherLock)
+				opponent.lock.unlock();
+			if(myLock)
+				lock.unlock();
+		}
+		return moved;
 	}
 
-	private boolean checkPosition(int walking_into) {
-		lock.lock();
-		opponent.lock.lock();
-		boolean result = opponent.getPosition() == walking_into && getLane().equals(opponent.getLane());
-		lock.unlock();
-		opponent.lock.unlock();
-		return result;
-	}
-	
 	private void changeLane() {
 //		System.out.format("# %s Begins to change lane", name);
 		
-		lock.lock();
-		if(lane.equals(Lane.LANE_A))
-			lane = Lane.LANE_B;
-		else
-			lane = Lane.LANE_A;
-		lock.unlock();
-//		System.out.println(name + "Changed lane");
+		boolean myLock = lock.tryLock();
+		boolean otherLock = opponent.lock.tryLock();
+		try{
+			if(myLock && otherLock){
+				Lane changeToLane;
+				if(lane.equals(Lane.LANE_A))
+					changeToLane = Lane.LANE_B;
+				else
+					changeToLane = Lane.LANE_A;
+
+				if(!(opponent.getPosition() == position && changeToLane.equals(opponent.getLane()))){
+					lane = changeToLane;
+					System.out.format("%s Changed lane \n", name);
+				} else
+					System.out.println("failed to set. aborting");
+			}else
+				System.out.println("unable to lock both locks");
+		}finally{
+			if(otherLock)
+				opponent.lock.unlock();
+			if(myLock)
+				lock.unlock();
+		}
+		
+		
 	}
 
 	private  int getPosition() {
